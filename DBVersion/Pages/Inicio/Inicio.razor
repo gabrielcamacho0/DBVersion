@@ -1,0 +1,24 @@
+﻿@page "/"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+        <h5 class="">INICIO</h5>
+        <div class="row">
+            <div class="col-lg-3 pb-1 pt-1 text-center">
+                <a href="/solucionesactivas" class="btn modulo btn-lg p-5">SOLUCIONES ACTIVAS</a>
+            </div>
+            @* <div class="col-lg-3 pb-1 pt-1 text-center">
+                <a href="/historialsoluciones" class="btn modulo btn-lg p-5">HISTORIAL DE SOLUCIONES</a>
+            </div> *@
+        </div>
+    </div>
+}
+
+@code {
+    
+}

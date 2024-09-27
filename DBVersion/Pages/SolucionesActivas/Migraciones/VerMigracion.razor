@@ -1,0 +1,126 @@
+﻿@page "/solucionesactivas/migraciones/vermigracion"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+
+        @if (Convert.ToBoolean(dtMigracion.Rows[0]["EstadoMigracion"].ToString().ToLower()))
+        {
+            <h5 class=""><a href="/solucionesactivas/migraciones/activas?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>VER MIGRACIÓN</h5>
+        }
+        else
+        {
+            <h5 class=""><a href="/solucionesactivas/migraciones/historial?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>VER MIGRACIÓN</h5>
+        }
+        
+        <div class="row">
+            <div class="col-6">
+                <div>Identificador: <label class="fw-bold">@dtSolucion.Rows[0]["Identificador"]</label></div>
+                <div>Nombre: <label class="fw-bold">@dtSolucion.Rows[0]["NombreSolucion"]</label></div>
+            </div>
+            <div class="col-6">
+                <label class="form-label">Fecha de migración</label>
+                <div class="form-outline form-white">
+                    @if (!String.IsNullOrEmpty(dtMigracion.Rows[0]["FechaMigracion"].ToString()))
+                    {
+                        <input type="text" class="form-control form-control-lg" value='@Convert.ToDateTime(dtMigracion.Rows[0]["FechaMigracion"]).ToString("dd/MM/yyyy")' disabled>
+                    }else
+                    {
+                        <input type="date" class="form-control form-control-lg" disabled>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <hr />
+
+        <div class="row">
+            <div class="col-6">
+                <div class="row">
+                    <div class="col-12">
+                        <label class="form-label">Script</label>
+                        <button class="btn btn-outline-secondary" @onclick='(async (e) =>{await JSRuntime.InvokeVoidAsync("copiarAlPortapapeles", System.Threading.CancellationToken.None, dtMigracion.Rows[0]["Script"].ToString());})'>Copiar<span class="oi oi-script"></span></button>
+                        <div class="form-outline form-white">
+                            <textarea id="miTexto" rows="20" class="form-control form-control-lg codigo-textarea" spellcheck="false" value='@dtMigracion.Rows[0]["Script"]' disabled />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Nuevos cambios</label>
+                        <button class="btn btn-outline-secondary" @onclick='(async (e) =>{await JSRuntime.InvokeVoidAsync("copiarAlPortapapeles", System.Threading.CancellationToken.None, dtMigracion.Rows[0]["NuevosCambios"].ToString());})'>Copiar<span class="oi oi-script"></span></button>
+                        <div class="form-outline form-white">
+                            <textarea rows="20" class="form-control form-control-lg codigo-textarea" spellcheck="false" value='@dtMigracion.Rows[0]["NuevosCambios"]' disabled/>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="col-6">
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Observaciones de la solicitud</label>
+                        <div class="form-outline form-white">
+                            <textarea rows="5" class="form-control form-control-lg" value='@dtMigracion.Rows[0]["ObservacionesSolicitud"]' disabled/>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Observaciones de la migración</label>
+                        <div class="form-outline form-white">
+                            <textarea rows="5" class="form-control form-control-lg" value='@dtMigracion.Rows[0]["ObservacionesMigracion"]' disabled />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked='@Convert.ToBoolean(dtMigracion.Rows[0]["MigradoDesa"].ToString().ToLower())' disabled /><label class="form-label">Migración a Desa</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked='@Convert.ToBoolean(dtMigracion.Rows[0]["MigradoPrue"].ToString().ToLower())' disabled /><label class="form-label">Migración a Prue</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked='@Convert.ToBoolean(dtMigracion.Rows[0]["MigradoCapa"].ToString().ToLower())' disabled /><label class="form-label">Migración a Capa</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked='@Convert.ToBoolean(dtMigracion.Rows[0]["MigradoProd"].ToString().ToLower())' disabled /><label class="form-label">Migración a Prod</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idSolucion { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idMigracion { get; set; }
+
+    DataTable dtSolucion = null;
+    DataTable dtMigracion = null;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            dtSolucion = new SolucionDA().SelectTable(new Solucion { IdSolucion = idSolucion }, 1);
+            dtMigracion = new MigracionDA().SelectTable(new Migracion { IdMigracion = idMigracion }, 3);
+        }
+        catch
+        {
+
+        }
+    }
+
+}

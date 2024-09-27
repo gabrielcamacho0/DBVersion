@@ -1,0 +1,29 @@
+﻿@page "/solucionesactivas"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+        <h5 class=""><a href="/" class="oi oi-arrow-left flecha-retroceso"></a>SOLUCIONES ACTIVAS</h5>
+        <div class="row">
+            @foreach (DataRow solucion in soluciones.Rows)
+            {
+                <div class="col-lg-3 pb-1 pt-1 text-center">
+                    <a href="/solucionesactivas/tareas?idSolucion=@solucion["IdSolucion"]" class="btn modulo btn-lg p-5" title="">@solucion["Identificador"] - @solucion["NombreSolucion"]</a>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    DataTable soluciones = null;
+
+    protected override void OnInitialized()
+    {
+        soluciones = new SolucionDA().SelectTable(new Solucion { }, 0);
+    }
+}

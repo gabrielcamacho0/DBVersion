@@ -1,0 +1,427 @@
+﻿@page "/solucionesactivas/modificaciones/historial"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+        <div class="container-fluid">
+        <h5 class=""><a href="/solucionesactivas/modificaciones/activas?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>MODIFICACIONES APROBADAS</h5>
+
+            <div class="tabla-dbversion">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr class="align-middle">
+                            <th>Id</th>
+                            <th>Fecha</th>
+                            @*<th>Cambio</th>*@
+                            <th>Tipo</th>
+                            <th>Objeto</th>
+                            <th>Nombre</th>
+                            <th>BD</th>
+                            <th>Ambiente</th>
+                            <th>Responsable</th>
+                            <th>Requerimiento</th>
+                            <th></th>
+                        </tr>
+                    <tr class="align-middle">
+                        <th><input type="number" min="1" class="form-control" @onchange="(async (e)=>{await filtrarId(e);})"></th>
+                        <th><input type="date" class="form-control" @onchange="(async (e)=>{await filtrarFecha(e);})"></th>
+                        @*<th><input type="text"></th>*@
+                        <th>
+                            <select class="form-control" @onchange="(async (e)=>{await filtrarTipo(e);})">
+                                <option value="0">Seleccione una opción...</option>
+                                @foreach(DataRow tipo in dtTipoModificacion.Rows)
+                                {
+                                    <option value="@Convert.ToInt32(tipo["IdTipoModificacion"])">@tipo["NombreTipoModificacion"]</option>
+                                }
+                            </select>
+                        </th>
+                        <th>
+                            <select class="form-control" @onchange="(async (e)=>{await filtrarObjeto(e);})">
+                                <option value="0">Seleccione una opción...</option>
+                                @foreach (DataRow objeto in dtObjetoModificado.Rows)
+                                {
+                                    <option value="@Convert.ToInt32(objeto["IdObjetoModificado"])">@objeto["NombreObjetoModificado"]</option>
+                                }
+                            </select>
+                        </th>
+                        <th><input type="text" class="form-control" @onchange="(async (e) => { await filtrarNombre(e); })" /></th>
+                        <th>
+                            <select class="form-control" @onchange="(async (e)=>{await filtrarBD(e);})">
+                                <option value="0">Seleccione una opción...</option>
+                                @foreach (DataRow bd in dtBaseDatos.Rows)
+                                {
+                                    <option value="@Convert.ToInt32(bd["IdBaseDatos"])">@bd["NombreBaseDatos"]</option>
+                                }
+                            </select>
+                        </th>
+                        <th>
+                            <select class="form-control" @onchange="(async (e)=>{await filtrarAmbiente(e);})">
+                                <option value="0">Seleccione una opción...</option>
+                                @foreach (DataRow ambiente in dtAmbiente.Rows)
+                                {
+                                    <option value="@Convert.ToInt32(ambiente["IdAmbiente"])">@ambiente["NombreAmbiente"]</option>
+                                }
+                            </select>
+                        </th>
+                        <th>
+                            <select class="form-control" @onchange="(async (e)=>{await filtrarResponsable(e);})">
+                                <option value="0">Seleccione una opción...</option>
+                                @foreach (DataRow responsable in dtResponsable.Rows)
+                                {
+                                    <option value="@Convert.ToInt32(responsable["IdUsuario"])">@responsable["Logueo"]</option>
+                                }
+                            </select>
+                        </th>
+                        <th><input type="text" class="form-control" @onchange="(async (e) => { await filtrarRequerimiento(e); })" /></th>
+                        <th><i @onclick="((e)=>{NavManager.NavigateTo(NavManager.Uri,true,true);})" class="pointer">Quitar filtros</i> </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @if (historialModificaciones != null)
+                        {
+                        @foreach (DataRow modificacion in historialModificaciones.Rows)
+                            {
+                                int _idModificacion = Convert.ToInt32(modificacion["IdModificacion"]);
+
+                            <tr class="align-middle pointer" @onclick='((e)=>{NavManager.NavigateTo($"/solucionesactivas/modificaciones/vermodificacion?idModificacion={_idModificacion}&idSolucion={idSolucion}", true);})'>
+                                    <td class="">@modificacion["IdModificacion"]</td>
+                                    <td class="">@Convert.ToDateTime(modificacion["FechaModificacion"]).ToString("dd/MM/yyyy")</td>
+                                    @*<td class="">@modificacion["Descripcion"]</td>*@
+                                    <td class="">@modificacion["NombreTipoModificacion"]</td>
+                                    <td class="">@modificacion["NombreObjetoModificadoOM"]</td>
+                                    <td class="">@modificacion["NombreObjetoModificado"]</td>
+                                    <td class="">@modificacion["NombreBaseDatos"]</td>
+                                    <td class="">@modificacion["NombreAmbiente"]</td>
+                                    <td class="">@modificacion["Logueo"]</td>
+                                    <td class="">@modificacion["Requerimiento"]</td>
+                                    <td></td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+}
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idSolucion { get; set; }
+
+    DataTable historialModificaciones = null;
+    DataTable dtTipoModificacion = null;
+    DataTable dtObjetoModificado = null;
+    DataTable dtBaseDatos = null;
+    DataTable dtAmbiente = null;
+    DataTable dtResponsable = null;
+
+    int idFiltro, tipoFiltro, objetoFiltro, bdFiltro, ambienteFiltro, responsableFiltro;
+    DateTime fechaFiltro = Convert.ToDateTime("01-01-1900");
+    string nombreFiltro = null, requerimientoFiltro = null;
+    Modificacion modificacionesFiltro = new Modificacion();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            historialModificaciones = new ModificacionDA().SelectTable(new Modificacion { IdSolucion = idSolucion }, 1);
+            dtTipoModificacion = new TipoModificacionDA().SelectTable(new TipoModificacion { }, 0);
+            dtObjetoModificado = new ObjetoModificadoDA().SelectTable(new ObjetoModificado { }, 0);
+            dtBaseDatos = new BaseDatosDA().SelectTable(new BaseDatos { }, 0);
+            dtAmbiente = new AmbienteDA().SelectTable(new Ambiente { }, 0);
+            dtResponsable = new UsuarioDA().SelectTable(new Usuario { }, 1);
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarId(ChangeEventArgs e)
+    {
+        try
+        {
+
+            if (int.TryParse(e.Value.ToString(), out idFiltro))
+            {
+                if (idFiltro > 0)
+                {
+                    filtrar();
+                    return;
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alertaPopup", System.Threading.CancellationToken.None, "¡El ID debe ser mayor a 1. No se aplicó el filtro!");
+                    idFiltro = new int();
+                    filtrar();
+                    return;
+                }
+            }
+            else
+            {
+                idFiltro = new int();
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarFecha(ChangeEventArgs e)
+    {
+        try
+        {
+            if (DateTime.TryParse(e.Value.ToString(), out fechaFiltro))
+            {
+                filtrar();
+                return;
+            }
+            else
+            {
+                fechaFiltro = Convert.ToDateTime("01-01-1900");
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarTipo(ChangeEventArgs e)
+    {
+        try
+        {
+
+            if (int.TryParse(e.Value.ToString(), out tipoFiltro))
+            {
+                if (tipoFiltro > 0)
+                {
+                    filtrar();
+                    return;
+                }
+                else
+                {
+                    tipoFiltro = new int();
+                    filtrar();
+                    return;
+                }
+            }
+            else
+            {
+                tipoFiltro = new int();
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarObjeto(ChangeEventArgs e)
+    {
+        try
+        {
+
+            if (int.TryParse(e.Value.ToString(), out objetoFiltro))
+            {
+                if (objetoFiltro > 0)
+                {
+                    filtrar();
+                    return;
+                }
+                else
+                {
+                    objetoFiltro = new int();
+                    filtrar();
+                    return;
+                }
+            }
+            else
+            {
+                objetoFiltro = new int();
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarNombre(ChangeEventArgs e)
+    {
+        try
+        {
+            if (!String.IsNullOrEmpty(e.Value.ToString().Trim()))
+            {
+                nombreFiltro = e.Value.ToString();
+                filtrar();
+            }
+            else
+            {
+                nombreFiltro = null;
+                filtrar();
+            }
+
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarBD(ChangeEventArgs e)
+    {
+        try
+        {
+
+            if (int.TryParse(e.Value.ToString(), out bdFiltro))
+            {
+                if (bdFiltro > 0)
+                {
+                    filtrar();
+                    return;
+                }
+                else
+                {
+                    bdFiltro = new int();
+                    filtrar();
+                    return;
+                }
+            }
+            else
+            {
+                bdFiltro = new int();
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarAmbiente(ChangeEventArgs e)
+    {
+        try
+        {
+
+            if (int.TryParse(e.Value.ToString(), out ambienteFiltro))
+            {
+                if (ambienteFiltro > 0)
+                {
+                    filtrar();
+                    return;
+                }
+                else
+                {
+                    ambienteFiltro = new int();
+                    filtrar();
+                    return;
+                }
+            }
+            else
+            {
+                ambienteFiltro = new int();
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarResponsable(ChangeEventArgs e)
+    {
+        try
+        {
+
+            if (int.TryParse(e.Value.ToString(), out responsableFiltro))
+            {
+                if (responsableFiltro > 0)
+                {
+                    filtrar();
+                    return;
+                }
+                else
+                {
+                    responsableFiltro = new int();
+                    filtrar();
+                    return;
+                }
+            }
+            else
+            {
+                responsableFiltro = new int();
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarRequerimiento(ChangeEventArgs e)
+    {
+        try
+        {
+            if (!String.IsNullOrEmpty(e.Value.ToString().Trim()))
+            {
+                requerimientoFiltro = e.Value.ToString();
+                filtrar();
+            }
+            else
+            {
+                requerimientoFiltro = null;
+                filtrar();
+            }
+
+            
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected void filtrar()
+    {
+        try
+        {
+            historialModificaciones = new ModificacionDA().SelectTable(new Modificacion 
+                {
+                    IdModificacion = idFiltro,
+                    FechaModificacion = fechaFiltro,
+                    IdTipoModificacion = tipoFiltro,
+                    IdObjetoModificado = objetoFiltro,
+                    NombreObjetoModificado = nombreFiltro,
+                    IdBaseDatos = bdFiltro,
+                    IdAmbiente = ambienteFiltro,
+                    IdUsuario = responsableFiltro,
+                    Requerimiento = requerimientoFiltro,
+                    IdSolucion = idSolucion
+                }, 9);
+        }
+        catch
+        {
+            
+        }
+    }
+
+}

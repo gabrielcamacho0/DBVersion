@@ -1,0 +1,182 @@
+﻿@page "/solucionesactivas/modificaciones/crearmodificacion"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+        <h5 class=""><a href="/solucionesactivas/modificaciones/activas?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>CREAR MODIFICACIÓN</h5>
+
+        <div class="info-modal">
+            <p class="campo-obligatorio">
+                Campos obligatorios <span class="texto-rojo">*</span>
+            </p>
+        </div>
+
+        <div class="row mb-4 mt-4">
+            <div class="col-md-4">
+                <label class="form-label">Fecha modificación<span class="texto-rojo">*</span></label>
+                <div class="form-outline form-white">
+                    <input type="date" class="form-control form-control-lg" @bind-value="modificacion.FechaModificacion">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Tipo modificación<span class="texto-rojo">*</span></label>
+                <div class="form-outline form-white">
+                    <select @bind="modificacion.IdTipoModificacion" class="form-control form-control-lg">
+                        @if (dtTipoModificacion != null)
+                        {
+                            @for (int i = 0; i < dtTipoModificacion.Rows.Count; i++)
+                            {
+                                <option value="@Convert.ToInt32(dtTipoModificacion.Rows[i]["IdTipoModificacion"])">@dtTipoModificacion.Rows[i]["NombreTipoModificacion"]</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Tipo objeto modificado<span class="texto-rojo">*</span></label>
+                <div class="form-outline form-white">
+                    <select @bind="modificacion.IdObjetoModificado" class="form-control form-control-lg">
+                        @if (dtObjetoModificado != null)
+                        {
+                            @for (int i = 0; i < dtObjetoModificado.Rows.Count; i++)
+                            {
+                                <option value="@Convert.ToInt32(dtObjetoModificado.Rows[i]["IdObjetoModificado"])">@dtObjetoModificado.Rows[i]["NombreObjetoModificado"]</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Base de datos<span class="texto-rojo">*</span></label>
+                <div class="form-outline form-white">
+                    <select @bind="modificacion.IdBaseDatos" class="form-control form-control-lg">
+                        @if (dtBaseDatos != null)
+                        {
+                            @for (int i = 0; i < dtBaseDatos.Rows.Count; i++)
+                            {
+                                <option value="@Convert.ToInt32(dtBaseDatos.Rows[i]["IdBaseDatos"])">@dtBaseDatos.Rows[i]["NombreBaseDatos"]</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Ambiente<span class="texto-rojo">*</span></label>
+                <div class="form-outline form-white">
+                    <select @bind="modificacion.IdAmbiente" class="form-control form-control-lg">
+                        @if (dtAmbiente != null)
+                        {
+                            @for (int i = 0; i < dtAmbiente.Rows.Count; i++)
+                            {
+                                <option value="@Convert.ToInt32(dtAmbiente.Rows[i]["IdAmbiente"])">@dtAmbiente.Rows[i]["NombreAmbiente"]</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Requerimiento</label>
+                <div class="form-outline form-white">
+                    <input type="text" class="form-control form-control-lg" @bind-value="modificacion.Requerimiento">
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <label class="form-label">Nombre objeto modificado<span class="texto-rojo">*</span></label>
+                <div class="form-outline form-white">
+                    <input type="text" class="form-control form-control-lg" @bind-value="modificacion.NombreObjetoModificado" />
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <label class="form-label">Descripción<span class="texto-rojo">*</span></label>
+                <div class="form-outline form-white">
+                    <textarea class="form-control form-control-lg" @bind="modificacion.Descripcion" />
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <label class="form-label">Observación</label>
+                <div class="form-outline form-white">
+                    <textarea class="form-control form-control-lg" @bind="modificacion.Observacion" />
+                </div>
+            </div>
+        </div>
+
+
+        <div class="text-center mb-4">
+            <button class="btn btn-success" @onclick='async (e)=>{ await crear();}'>Crear</button>
+        </div>
+        
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idSolucion { get; set; }
+
+    DataTable dtTipoModificacion = null;
+    DataTable dtObjetoModificado = null;
+    DataTable dtBaseDatos = null;
+    DataTable dtAmbiente = null;
+
+    Modificacion modificacion = new Modificacion();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            dtTipoModificacion = new TipoModificacionDA().SelectTable(new TipoModificacion { }, 0);
+            dtObjetoModificado = new ObjetoModificadoDA().SelectTable(new ObjetoModificado { }, 0);
+            dtBaseDatos = new BaseDatosDA().SelectTable(new BaseDatos { }, 0);
+            dtAmbiente = new AmbienteDA().SelectTable(new Ambiente { }, 0);
+
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task crear()
+    {
+        try
+        {
+            if (modificacion.FechaModificacion == null
+                || modificacion.IdTipoModificacion < 1
+                || modificacion.IdObjetoModificado < 1
+                || modificacion.IdBaseDatos < 1
+                || modificacion.IdAmbiente < 1
+                || String.IsNullOrEmpty(modificacion.NombreObjetoModificado.Trim())
+                || String.IsNullOrEmpty(modificacion.Descripcion.Trim())
+            )
+            {
+                await JSRuntime.InvokeVoidAsync("alertaPopup", System.Threading.CancellationToken.None, "¡Debe diligenciar los campos obligatorios!");
+                return;
+            }
+
+            if (await JSRuntime.InvokeAsync<bool>("confirmarPopup", System.Threading.CancellationToken.None, "¿Está seguro de crear esta modificación?", "Crear","No"))
+            {
+                modificacion.IdUsuario = idUsuario;
+                modificacion.IdSolucion = idSolucion;
+                new ModificacionDA().InsertOrUpdate(modificacion, 4);
+                NavManager.NavigateTo($"/solucionesactivas/modificaciones/activas?idSolucion={idSolucion}", true);
+                return;
+            }
+        }catch
+        {
+            
+        }
+    }
+
+}

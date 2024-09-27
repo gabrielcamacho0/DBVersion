@@ -1,0 +1,21 @@
+{
+  "name": "DBVersion",
+  "short_name": "DBVersion",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "dbversion-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "dbversion-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+﻿@page "/solucionesactivas/migraciones/activas"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+        <h5 class=""><a href="/solucionesactivas/tareas?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a><i class="oi oi-circle-check me-2"></i>MIGRACIONES ACTIVAS</h5>
+
+        <div class="mb-3">
+            <div class="align-items-center">
+                <a class="btn btn-success fw-bold" title="Crear migración" href="/solucionesactivas/migraciones/crearmigracion?idSolucion=@idSolucion"><i class="oi oi-plus"></i></a>
+                <a class="btn btn-secondary" href="/solucionesactivas/modificaciones/activas?idSolucion=@idSolucion"><i class="oi oi-beaker me-2"></i>Ir a modificaciones</a>
+            </div>
+        </div>
+
+        <div class="tabla-dbversion">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr class="align-middle">
+                        <th>Id</th>
+                        <th>Identificador</th>
+                        <th>Nombre</th>
+                        <th>Fecha solicitud</th>
+                        <th>Acciones</th>
+                        <th></th>
+                    </tr>
+                    <tr class="align-middle">
+                        <th style="width:150px;"><input type="number" min="1" class="form-control" @onchange="(async (e)=>{await filtrarId(e);})"></th>
+                        <th></th>
+                        <th></th>
+                        <th style="width:150px;"><input type="date" class="form-control" @onchange="(async (e)=>{await filtrarFecha(e);})"></th>
+                        <th></th>
+                        <th><i @onclick="((e)=>{NavManager.NavigateTo(NavManager.Uri,true,true);})" class="pointer">Quitar filtros</i> </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (migracionesActivas != null)
+                    {
+                        @foreach (DataRow migracion in migracionesActivas.Rows)
+                        {
+                            int _idMigracion = Convert.ToInt32(migracion["IdMigracion"]);
+
+                            <tr class="align-middle">
+                                <td class="">@migracion["IdMigracion"]</td>
+                                <td class="">@migracion["Identificador"]</td>
+                                <td class="">@migracion["NombreSolucion"]</td>
+                                <td class="">@Convert.ToDateTime(migracion["FechaSolicitud"]).ToString("dd/MM/yyyy")</td>
+                                <td class="">
+                                    <div title="Ver" class="btn tabla-dbversion_btn text-center" @onclick='((e)=>{NavManager.NavigateTo($"/solucionesactivas/migraciones/vermigracion?idMigracion={_idMigracion}&idSolucion={idSolucion}", true);})'><i class="oi oi-eye"></i></div>
+                                    <div title="Editar" class="btn tabla-dbversion_btn text-center" @onclick='((e)=>{NavManager.NavigateTo($"/solucionesactivas/migraciones/editarmigracion?idMigracion={_idMigracion}&idSolucion={idSolucion}", true);})'><i class="oi oi-pencil"></i></div>
+                                    <div class="btn tabla-dbversion_btn text-center" @onclick='((e)=>{NavManager.NavigateTo($"/solucionesactivas/migraciones/migrarmigracion?idMigracion={_idMigracion}&idSolucion={idSolucion}", true);})'>Migrar</div>
+                                </td>
+                                <td></td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="text-center mb-4">
+            <button class="btn btn-secondary" @onclick='((e)=>{NavManager.NavigateTo($"/solucionesactivas/migraciones/historial?idSolucion={idSolucion}", true);})'>Ver historial</button>
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idSolucion { get; set; }
+
+    DataTable migracionesActivas = null;
+
+    int idFiltro;
+    DateTime fechaFiltro = Convert.ToDateTime("01-01-1900");
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            migracionesActivas = new MigracionDA().SelectTable(new Migracion { IdSolucion = idSolucion }, 0);
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarId(ChangeEventArgs e)
+    {
+        try
+        {
+
+            if (int.TryParse(e.Value.ToString(), out idFiltro))
+            {
+                if (idFiltro > 0)
+                {
+                    filtrar();
+                    return;
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alertaPopup", System.Threading.CancellationToken.None, "¡El ID debe ser mayor a 1. No se aplicó el filtro!");
+                    idFiltro = new int();
+                    filtrar();
+                    return;
+                }
+            }
+            else
+            {
+                idFiltro = new int();
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarFecha(ChangeEventArgs e)
+    {
+        try
+        {
+            if (DateTime.TryParse(e.Value.ToString(), out fechaFiltro))
+            {
+                filtrar();
+                return;
+            }
+            else
+            {
+                fechaFiltro = Convert.ToDateTime("01-01-1900");
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected void filtrar()
+    {
+        try
+        {
+            migracionesActivas = new MigracionDA().SelectTable(new Migracion
+                {
+                    IdMigracion = idFiltro,
+                    FechaSolicitud = fechaFiltro,
+                    IdSolucion = idSolucion
+                }, 13);
+        }
+        catch
+        {
+
+        }
+    }
+}

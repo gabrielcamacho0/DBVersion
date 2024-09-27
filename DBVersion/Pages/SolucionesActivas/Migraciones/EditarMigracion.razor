@@ -1,0 +1,174 @@
+﻿@page "/solucionesactivas/migraciones/editarmigracion"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+        <h5 class=""><a href="/solucionesactivas/migraciones/activas?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>EDITAR SOLICITUD DE MIGRACIÓN</h5>
+
+        <div class="info-modal">
+            <p class="campo-obligatorio">
+                Campos obligatorios <span class="texto-rojo">*</span>
+            </p>
+        </div>
+
+        <div class="mt-3">Identificador: <label class="fw-bold">@dtSolucion.Rows[0]["Identificador"]</label></div>
+        <div>Nombre: <label class="fw-bold">@dtSolucion.Rows[0]["NombreSolucion"]</label></div>
+        <hr />
+
+        <div class="row">
+            <div class="col-6">
+                <div class="row">
+                    <div class="col-12">
+                        <label class="form-label">Script<span class="texto-rojo">*</span></label>
+                        <div class="form-outline form-white">
+                            <textarea rows="20" class="form-control form-control-lg codigo-textarea" spellcheck="false" @bind="migracion.Script" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Nuevos cambios</label>
+                        <div class="form-outline form-white">
+                            <textarea rows="20" class="form-control form-control-lg codigo-textarea" spellcheck="false" @bind="migracion.NuevosCambios" />
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="col-6">
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Observaciones de la solicitud</label>
+                        <div class="form-outline form-white">
+                            <textarea rows="5" class="form-control form-control-lg" @bind="migracion.ObservacionesSolicitud" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Observaciones de la migración</label>
+                        <div class="form-outline form-white">
+                            <textarea rows="5" class="form-control form-control-lg" @bind="migracion.ObservacionesMigracion" disabled/>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked="@migracion.MigradoDesa" @bind-value="migracion.MigradoDesa" /><label class="form-label">Migración a Desa</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked="@migracion.MigradoPrue" @bind-value="migracion.MigradoPrue" /><label class="form-label">Migración a Prue</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked="@migracion.MigradoCapa" @bind-value="migracion.MigradoCapa" /><label class="form-label">Migración a Capa</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked="@migracion.MigradoProd" @bind-value="migracion.MigradoProd" /><label class="form-label">Migración a Prod</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center m-3 mb-4">
+            <button class="btn btn-danger" @onclick='async (e)=>{ await eliminar();}'>Eliminar</button>
+            <button class="btn btn-success" @onclick='async (e)=>{ await guardar();}'>Guardar</button>
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idSolucion { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idMigracion { get; set; }
+
+    DataTable dtSolucion = null;
+    DataTable dtMigracion = null;
+
+    Migracion migracion = new Migracion();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            dtSolucion = new SolucionDA().SelectTable(new Solucion { IdSolucion = idSolucion }, 1);
+            dtMigracion = new MigracionDA().SelectTable(new Migracion { IdMigracion = idMigracion }, 3);
+
+            if (dtMigracion.Rows.Count > 0)
+            {
+                migracion = new Migracion
+                    {
+                        IdMigracion = idMigracion,
+                        Script = dtMigracion.Rows[0]["Script"].ToString(),
+                        NuevosCambios = dtMigracion.Rows[0]["NuevosCambios"].ToString(),
+                        ObservacionesSolicitud = dtMigracion.Rows[0]["ObservacionesSolicitud"].ToString(),
+                        ObservacionesMigracion = dtMigracion.Rows[0]["ObservacionesMigracion"].ToString(),
+                        MigradoDesa = Convert.ToBoolean(dtMigracion.Rows[0]["MigradoDesa"].ToString().ToLower()),
+                        MigradoPrue = Convert.ToBoolean(dtMigracion.Rows[0]["MigradoPrue"].ToString().ToLower()),
+                        MigradoCapa = Convert.ToBoolean(dtMigracion.Rows[0]["MigradoCapa"].ToString().ToLower()),
+                        MigradoProd = Convert.ToBoolean(dtMigracion.Rows[0]["MigradoProd"].ToString().ToLower()),
+                    };
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task guardar()
+    {
+        try
+        {
+            if (String.IsNullOrEmpty(migracion.Script.Trim()))
+            {
+                await JSRuntime.InvokeVoidAsync("alertaPopup", System.Threading.CancellationToken.None, "¡Debe diligenciar los campos obligatorios!");
+                return;
+            }
+
+            if (migracion.MigradoDesa == false && migracion.MigradoPrue == false && migracion.MigradoCapa == false && migracion.MigradoProd == false)
+            {
+                await JSRuntime.InvokeVoidAsync("alertaPopup", System.Threading.CancellationToken.None, "¡Debe seleccionar los ambientes en los que se encuentran actualmente los cambios!");
+                return;
+            }
+
+            if (await JSRuntime.InvokeAsync<bool>("confirmarPopup", System.Threading.CancellationToken.None, "¿Está seguro de guardar los cambios de esta solicitud de migración?","Guardar","No"))
+            {
+                new MigracionDA().InsertOrUpdate(migracion, 5);
+                NavManager.NavigateTo($"/solucionesactivas/migraciones/activas?idSolucion={idSolucion}", true);
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task eliminar()
+    {
+        try
+        {
+            if (await JSRuntime.InvokeAsync<bool>("confirmarPopup", System.Threading.CancellationToken.None, "¿Está seguro de ELIMINAR esta solicitud de migración?", "Eliminar", "No"))
+            {
+                new MigracionDA().InsertOrUpdate(migracion, 6);
+                NavManager.NavigateTo($"/solucionesactivas/migraciones/activas?idSolucion={idSolucion}", true);
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+}

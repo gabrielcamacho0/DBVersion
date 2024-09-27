@@ -1,0 +1,112 @@
+﻿@page "/solucionesactivas/modificaciones/vermodificacion"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+
+        @if(Convert.ToBoolean(modificacion.Rows[0]["Aprobado"].ToString().ToLower())){
+            <h5 class=""><a href="/solucionesactivas/modificaciones/historial?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>VER MODIFICACIÓN</h5>
+        }
+        else
+        {
+            <h5 class=""><a href="/solucionesactivas/modificaciones/activas?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>VER MODIFICACIÓN</h5>
+        }
+
+        @if(modificacion != null && modificacion.Rows.Count > 0)
+        {
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Fecha modificación</label>
+                    <div class="form-outline form-white">
+                        <input type="text" class="form-control form-control-lg" value='@Convert.ToDateTime(modificacion.Rows[0]["FechaModificacion"]).ToString("dd/MM/yyyy")' disabled>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tipo modificación</label>
+                    <div class="form-outline form-white">
+                        <input type="text" class="form-control form-control-lg" value='@modificacion.Rows[0]["NombreTipoModificacion"]' disabled>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tipo objeto modificado</label>
+                    <div class="form-outline form-white">
+                        <input type="text" class="form-control form-control-lg" value='@modificacion.Rows[0]["NombreObjetoModificadoOM"]' disabled>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Base de datos</label>
+                    <div class="form-outline form-white">
+                        <input type="text" class="form-control form-control-lg" value='@modificacion.Rows[0]["NombreBaseDatos"]' disabled>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ambiente</label>
+                    <div class="form-outline form-white">
+                        <input type="text" class="form-control form-control-lg" value='@modificacion.Rows[0]["NombreAmbiente"]' disabled>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Requerimiento</label>
+                    <div class="form-outline form-white">
+                        <input type="text" class="form-control form-control-lg" value='@modificacion.Rows[0]["Requerimiento"]' disabled>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <label class="form-label">Nombre objeto modificado</label>
+                    <div class="form-outline form-white">
+                        <input type="text" class="form-control form-control-lg" value='@modificacion.Rows[0]["NombreObjetoModificado"]' disabled />
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <label class="form-label">Descripción</label>
+                    <div class="form-outline form-white">
+                        <textarea class="form-control form-control-lg" value='@modificacion.Rows[0]["Descripcion"]' disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <label class="form-label">Observación</label>
+                    <div class="form-outline form-white">
+                        <textarea class="form-control form-control-lg" value='@modificacion.Rows[0]["Observacion"]' disabled/>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idModificacion { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idSolucion { get; set; }
+
+    DataTable modificacion = null;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            modificacion = new ModificacionDA().SelectTable(new Modificacion { IdModificacion = idModificacion }, 2);
+        }
+        catch
+        {
+
+        }
+    }
+
+}

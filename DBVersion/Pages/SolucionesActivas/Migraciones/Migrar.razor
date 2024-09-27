@@ -1,0 +1,228 @@
+﻿@page "/solucionesactivas/migraciones/migrarmigracion"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+        <h5 class=""><a href="/solucionesactivas/migraciones/activas?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>EJECUTAR MIGRACIÓN</h5>
+
+        <div class="info-modal">
+            <p class="campo-obligatorio">
+                Campos obligatorios <span class="texto-rojo">*</span>
+            </p>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-6">
+                <div>Identificador: <label class="fw-bold">@dtSolucion.Rows[0]["Identificador"]</label></div>
+                <div>Nombre: <label class="fw-bold">@dtSolucion.Rows[0]["NombreSolucion"]</label></div>
+            </div>
+            <div class="col-6">
+                <label class="form-label">Fecha de migración<span class="texto-rojo">*</span></label>
+                <div class="form-outline form-white">
+                    <input type="date" class="form-control form-control-lg" @bind-value='migracion.FechaMigracion'>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-6">
+                <div class="row">
+                    <div class="col-12">
+                        <label class="form-label">Script</label>
+                        <button class="btn btn-outline-secondary" @onclick='(async (e) =>{await JSRuntime.InvokeVoidAsync("copiarAlPortapapeles", System.Threading.CancellationToken.None, dtMigracion.Rows[0]["Script"].ToString());})'>Copiar<span class="oi oi-script"></span></button>
+                        <div class="form-outline form-white">
+                            <textarea rows="20" class="form-control form-control-lg codigo-textarea" spellcheck="false" @bind="migracion.Script" disabled/>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Nuevos cambios</label>
+                        <button class="btn btn-outline-secondary" @onclick='(async (e) =>{await JSRuntime.InvokeVoidAsync("copiarAlPortapapeles", System.Threading.CancellationToken.None, dtMigracion.Rows[0]["NuevosCambios"].ToString());})'>Copiar<span class="oi oi-script"></span></button>
+                        <div class="form-outline form-white">
+                            <textarea rows="20" class="form-control form-control-lg codigo-textarea" spellcheck="false" @bind="migracion.NuevosCambios" disabled/>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="col-6">
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Observaciones de la solicitud</label>
+                        <div class="form-outline form-white">
+                            <textarea rows="5" class="form-control form-control-lg" @bind="migracion.ObservacionesSolicitud" disabled/>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Observaciones de la migración</label>
+                        <div class="form-outline form-white">
+                            <textarea rows="5" class="form-control form-control-lg" @bind="migracion.ObservacionesMigracion" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked="@migracion.MigradoDesa" @onchange='((e)=>{bool check = Convert.ToBoolean(e.Value); migrarDesa(check);})' /><label class="form-label">Migración a Desa</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked="@migracion.MigradoPrue" @onchange='((e)=>{bool check = Convert.ToBoolean(e.Value); migrarPrue(check);})' /><label class="form-label">Migración a Prue</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked="@migracion.MigradoCapa" @onchange='((e)=>{bool check = Convert.ToBoolean(e.Value); migrarCapa(check);})' /><label class="form-label">Migración a Capa</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" class="form-check-inline" checked="@migracion.MigradoProd" @onchange='((e)=>{bool check = Convert.ToBoolean(e.Value); migrarProd(check);})' /><label class="form-label">Migración a Prod</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center m-3">
+            <button class="btn btn-danger" @onclick='async (e)=>{ await devolver();}'>Devolver migración</button>
+            <button class="btn btn-success" @onclick='async (e)=>{ await cerrar();}'>Cerrar migración</button>
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idSolucion { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idMigracion { get; set; }
+
+    DataTable dtSolucion = null;
+    DataTable dtMigracion = null;
+
+    Migracion migracion = new Migracion();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            dtSolucion = new SolucionDA().SelectTable(new Solucion { IdSolucion = idSolucion }, 1);
+            dtMigracion = new MigracionDA().SelectTable(new Migracion { IdMigracion = idMigracion }, 3);
+
+            if (dtMigracion.Rows.Count > 0)
+            {
+                migracion = new Migracion
+                    {
+                        IdMigracion = idMigracion,
+                        Script = dtMigracion.Rows[0]["Script"].ToString(),
+                        NuevosCambios = dtMigracion.Rows[0]["NuevosCambios"].ToString(),
+                        ObservacionesSolicitud = dtMigracion.Rows[0]["ObservacionesSolicitud"].ToString(),
+                        ObservacionesMigracion = dtMigracion.Rows[0]["ObservacionesMigracion"].ToString(),
+                        MigradoDesa = Convert.ToBoolean(dtMigracion.Rows[0]["MigradoDesa"].ToString().ToLower()),
+                        MigradoPrue = Convert.ToBoolean(dtMigracion.Rows[0]["MigradoPrue"].ToString().ToLower()),
+                        MigradoCapa = Convert.ToBoolean(dtMigracion.Rows[0]["MigradoCapa"].ToString().ToLower()),
+                        MigradoProd = Convert.ToBoolean(dtMigracion.Rows[0]["MigradoProd"].ToString().ToLower()),
+                    };
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task cerrar()
+    {
+        try
+        {
+            if (migracion.FechaMigracion == null)
+            {
+                await JSRuntime.InvokeVoidAsync("alertaPopup", System.Threading.CancellationToken.None, "¡Debe diligenciar los campos obligatorios!");
+                return;
+            }
+
+            if (await JSRuntime.InvokeAsync<bool>("confirmarPopup", System.Threading.CancellationToken.None, "¿Está seguro de cerrar esta migración?", "Sí", "No"))
+            {
+                migracion.IdUsuarioMigra = idUsuario;
+                new MigracionDA().InsertOrUpdate(migracion, 12);
+                NavManager.NavigateTo($"/solucionesactivas/migraciones/activas?idSolucion={idSolucion}", true);
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task devolver()
+    {
+        try
+        {
+            if (await JSRuntime.InvokeAsync<bool>("confirmarPopup", System.Threading.CancellationToken.None, "¿Está seguro de devolver esta solicitud de migración? Se guardarán la observación y los ambientes seleccionados.","Devolver","No"))
+            {
+                new MigracionDA().InsertOrUpdate(migracion, 11);
+                NavManager.NavigateTo($"/solucionesactivas/migraciones/activas?idSolucion={idSolucion}", true);
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected void migrarDesa(bool check)
+    {
+        try
+        {
+            new MigracionDA().InsertOrUpdate(new Migracion { IdMigracion = idMigracion, MigradoDesa = check }, 7);
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected void migrarPrue(bool check)
+    {
+        try
+        {
+            new MigracionDA().InsertOrUpdate(new Migracion { IdMigracion = idMigracion, MigradoPrue = check }, 8);
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected void migrarCapa(bool check)
+    {
+        try
+        {
+            new MigracionDA().InsertOrUpdate(new Migracion { IdMigracion = idMigracion, MigradoCapa = check }, 9);
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected void migrarProd(bool check)
+    {
+        try
+        {
+            new MigracionDA().InsertOrUpdate(new Migracion { IdMigracion = idMigracion, MigradoProd = check }, 10);
+        }
+        catch
+        {
+
+        }
+    }
+}

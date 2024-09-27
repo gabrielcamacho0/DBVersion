@@ -1,0 +1,144 @@
+﻿@page "/solucionesactivas/migraciones/historial"
+@inherits DBVersion.Pages.PaginaBase.PaginaBase;
+@using DBVersion.Data
+@using DBVersion.DataAccess
+@using System.Data
+
+@if (mostrarInfo)
+{
+    <div class="container-fluid">
+        <h5 class=""><a href="/solucionesactivas/migraciones/activas?idSolucion=@idSolucion" class="oi oi-arrow-left flecha-retroceso"></a>MIGRACIONES CERRADAS</h5>
+
+        <div class="tabla-dbversion">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr class="align-middle">
+                        <th>Id</th>
+                        <th>Identificador</th>
+                        <th>Nombre</th>
+                        <th>Fecha migración</th>
+                        <th></th>
+                    </tr>
+                    <tr class="align-middle">
+                        <th style="width:150px;"><input type="number" min="1" class="form-control" @onchange="(async (e)=>{await filtrarId(e);})"></th>
+                        <th></th>
+                        <th></th>
+                        <th style="width:150px;"><input type="date" class="form-control" @onchange="(async (e)=>{await filtrarFecha(e);})"></th>
+                        <th><i @onclick="((e)=>{NavManager.NavigateTo(NavManager.Uri,true,true);})" class="pointer">Quitar filtros</i> </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (historialMigraciones != null)
+                    {
+                        @foreach (DataRow migracion in historialMigraciones.Rows)
+                        {
+                            int _idMigracion = Convert.ToInt32(migracion["IdMigracion"]);
+
+                            <tr class="align-middle pointer" @onclick='((e)=>{NavManager.NavigateTo($"/solucionesactivas/migraciones/vermigracion?idMigracion={_idMigracion}&idSolucion={idSolucion}", true);})'>
+                                <td class="">@migracion["IdMigracion"]</td>
+                                <td class="">@migracion["Identificador"]</td>
+                                <td class="">@migracion["NombreSolucion"]</td>
+                                <td class="">@Convert.ToDateTime(migracion["FechaMigracion"]).ToString("dd/MM/yyyy")</td>
+                                <td></td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int idSolucion { get; set; }
+
+    DataTable historialMigraciones = null;
+
+    int idFiltro;
+    DateTime fechaFiltro = Convert.ToDateTime("01-01-1900");
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            historialMigraciones = new MigracionDA().SelectTable(new Migracion { IdSolucion = idSolucion }, 1);
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarId(ChangeEventArgs e)
+    {
+        try
+        {
+
+            if (int.TryParse(e.Value.ToString(), out idFiltro))
+            {
+                if (idFiltro > 0)
+                {
+                    filtrar();
+                    return;
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alertaPopup", System.Threading.CancellationToken.None, "¡El ID debe ser mayor a 1. No se aplicó el filtro!");
+                    idFiltro = new int();
+                    filtrar();
+                    return;
+                }
+            }
+            else
+            {
+                idFiltro = new int();
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected async Task filtrarFecha(ChangeEventArgs e)
+    {
+        try
+        {
+            if (DateTime.TryParse(e.Value.ToString(), out fechaFiltro))
+            {
+                filtrar();
+                return;
+            }
+            else
+            {
+                fechaFiltro = Convert.ToDateTime("01-01-1900");
+                filtrar();
+                return;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    protected void filtrar()
+    {
+        try
+        {
+            historialMigraciones = new MigracionDA().SelectTable(new Migracion
+                {
+                    IdMigracion = idFiltro,
+                    FechaMigracion = fechaFiltro,
+                    IdSolucion = idSolucion
+                }, 14);
+        }
+        catch
+        {
+
+        }
+    }
+}
